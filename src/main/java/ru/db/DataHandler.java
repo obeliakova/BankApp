@@ -1,11 +1,15 @@
 package ru.db;
 
-import java.sql.*;
-import java.util.*;
-
 import oracle.jdbc.pool.OracleDataSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.sql.*;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 
 public class DataHandler {
     private static final Logger LOG = LogManager.getLogger(ru.db.DataHandler.class.getName());
@@ -62,23 +66,84 @@ public class DataHandler {
         }
     }
 
-    public List<HashMap<String,Object>> getAmountsOfBanknotesFromDB() throws SQLException {
+    private Boolean executeUpdate(String query) throws SQLException {
+        try (Connection conn = getDBConnection();
+             Statement stmt = conn.createStatement();) {
+
+            int result = stmt.executeUpdate(query);
+            LOG.info("Query to DB: " + query);
+            if (result == 1){
+                LOG.info("Successfully update");
+                return true;
+            } else{
+                LOG.error("Update with error");
+                return false;
+            }
+        } catch (SQLException e) {
+            LOG.error(e.getMessage());
+            return false;
+        }
+    }
+
+
+    public HashMap<Integer,Integer> getAmountsOfBanknotes() throws SQLException {
         String query = "SELECT * FROM bank_banknotes";
-        return executeQuery(query);
+        List<HashMap<String,Object>> result = executeQuery(query);
+        HashMap<Integer,Integer> banknotes = new HashMap<Integer, Integer>();
+        if (result != null && result.size() != 0){
+            result.forEach(b -> banknotes.put(Integer.parseInt(b.get("TYPE").toString()),
+                                              Integer.parseInt(b.get("COUNT").toString())));
+        }
+        return banknotes;
     }
 
     public String getPinForUserCardFromDB(String cardNumber) throws SQLException {
         String query = "SELECT pin FROM bank_cards WHERE card_num = '"+ cardNumber +"'";
         List<HashMap<String,Object>> result = executeQuery(query);
-        String pin = result.get(0).get("PIN").toString();
+        String pin = "";
+        if (result != null && result.size() != 0)
+            pin = result.get(0).get("PIN").toString();
         return pin;
     }
 
     public Integer getCountCardFromDB(String cardNumber) throws SQLException {
         String query = "SELECT COUNT(*) FROM bank_cards WHERE card_num = '"+ cardNumber +"'";
         List<HashMap<String,Object>> result = executeQuery(query);
-        Integer count = Integer.parseInt(result.get(0).get("COUNT(*)").toString());
+        Integer count = 0;
+        if (result != null && result.size() != 0)
+            count = Integer.parseInt(result.get(0).get("COUNT(*)").toString());
         return count;
+    }
+
+    public Timestamp getValidDateCard(String cardNumber) throws SQLException, ParseException {
+        String query = "SELECT valid_date FROM bank_cards WHERE card_num = '"+ cardNumber +"'";
+        List<HashMap<String,Object>> result = executeQuery(query);
+        Timestamp date = new Timestamp(System.currentTimeMillis());
+        if (result != null && result.size() != 0) {
+            date = Timestamp.valueOf(result.get(0).get("VALID_DATE").toString());
+        }
+        return date;
+    }
+
+    public String getAccountBalance(String cardNumber) throws SQLException {
+        String query = "SELECT balance from bank_accounts " +
+                        "WHERE account_num = (SELECT account_num FROM bank_cards where card_num = '"+ cardNumber +"')";
+        List<HashMap<String,Object>> result = executeQuery(query);
+        String balance = "";
+        if (result != null && result.size() != 0)
+            balance = result.get(0).get("BALANCE").toString();
+        return balance;
+    }
+
+    public Boolean updateAccountBalance(String cardNumber, String sum, String operation) throws SQLException {
+        String query = "UPDATE bank_accounts SET balance = balance " + operation + " " + sum +
+                " WHERE account_num = (SELECT account_num FROM bank_cards where card_num = '"+ cardNumber + "')";
+        return executeUpdate(query);
+    }
+
+    public Boolean updateBanknoteCount(String type, String count) throws SQLException {
+        String query = "UPDATE bank_banknotes SET count = count - " + count + " WHERE type = " + type;
+        return executeUpdate(query);
     }
 
 }

@@ -1,15 +1,26 @@
 package ru.client;
 
-/**
- * Created by admspb on 04.03.2019.
- */
 public class Card {
     private String number;
-    private String firstname;
-    private String lastname;
-    private String validDate;
-    private String CCV;
+    private Boolean isValid;
 
+    public Card(String number) {
+        this.number = number;
+    }
 
+    public Boolean getIsValid() {
+        return isValid;
+    }
 
+    public void setIsValid(Boolean isValid) {
+        this.isValid = isValid;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public void setNumber(String number) {
+        this.number = number;
+    }
 }

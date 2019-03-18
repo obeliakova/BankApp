@@ -5,9 +5,9 @@ import ru.client.Client;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.sql.SQLException;
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public interface BankInterface extends Remote{
 
@@ -17,9 +17,13 @@ public interface BankInterface extends Remote{
 
   public Boolean checkCardNumber(String cardNumber) throws RemoteException, SQLException;
 
-  public Client getClientInfo() throws RemoteException;
+  public Boolean checkValidDateCard(String cardNumber) throws RemoteException, SQLException, ParseException;
 
-  public Boolean checkMoneyAmountOnUserAccount() throws RemoteException;
+  public Boolean updateBalanceAccount(String cardNumber, String sum, String operation) throws RemoteException, SQLException;
 
-  public List<HashMap<String,Object>> getAmountsOfBanknotes() throws RemoteException, SQLException;
+  public Boolean updateBanknoteCount(Integer type, Integer count) throws RemoteException, SQLException;
+
+  public Float getMoneyAmountOnUserAccount(String cardNumber) throws RemoteException, SQLException;
+
+  public HashMap<Integer, Integer> getAmountsOfBanknotes() throws RemoteException, SQLException;
 }
